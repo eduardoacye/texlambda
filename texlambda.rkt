@@ -135,22 +135,24 @@
 (define lc:variable-post         (make-parameter ""           (assert-predicate string?)))
 (define lc:application-separator (make-parameter "\\ "        (assert-predicate string?)))
 
-(define spaced?         (make-parameter #f (assert-predicate boolean?)))
-(define bold-variables? (make-parameter #f (assert-predicate boolean?)))
-(define bold-lambdas?   (make-parameter #f (assert-predicate boolean?)))
-(define bold-dots?      (make-parameter #f (assert-predicate boolean?)))
-(define explicit?       (make-parameter #f (assert-predicate boolean?)))
-(define term            (make-parameter "" (assert-predicate string?)))
+(define spaced?           (make-parameter #f (assert-predicate boolean?)))
+(define bold-variables?   (make-parameter #f (assert-predicate boolean?)))
+(define bold-lambdas?     (make-parameter #f (assert-predicate boolean?)))
+(define bold-dots?        (make-parameter #f (assert-predicate boolean?)))
+(define bold-parentheses? (make-parameter #f (assert-predicate boolean?)))
+(define explicit?         (make-parameter #f (assert-predicate boolean?)))
+(define term              (make-parameter "" (assert-predicate string?)))
 
 (define console-args
   (command-line
    #:program "TeX-LaMbDa"
    #:once-each
-   [("-s" "--spaced")          "Spaced terms mode - Introduces spacing"         (spaced? #t)]
-   [("-v" "--bold-variables") "Bold variables mode - Make variable names bold" (bold-variables? #t)]
-   [("-l" "--bold-lambdas")   "Bold lambdas mode - Makes lambdas bold"         (bold-lambdas? #t)]
-   [("-d" "--bold-dots")      "Bold dots mode - Makes dots bold"               (bold-dots? #t)]
-   [("-e" "--explicit")        "Explicit mode - Removes abuse of notation"      (explicit? #t)]
+   [("-s" "--spaced")           "Spaced terms mode - Introduces spacing"         (spaced? #t)]
+   [("-v" "--bold-variables")   "Bold variables mode - Make variable names bold" (bold-variables? #t)]
+   [("-l" "--bold-lambdas")     "Bold lambdas mode - Makes lambdas bold"         (bold-lambdas? #t)]
+   [("-d" "--bold-dots")        "Bold dots mode - Makes dots bold"               (bold-dots? #t)]
+   [("-p" "--bold-parentheses") "Bold parentheses mode - Makes parentheses bold" (bold-parentheses? #t)]
+   [("-e" "--explicit")         "Explicit mode - Removes abuse of notation"      (explicit? #t)]
    #:args (str)
    str))
 
@@ -166,9 +168,13 @@
 (when (bold-dots?)
   (lc:abstraction-separator " \\boldsymbol{.} "))
 
+(when (bold-parentheses?)
+  (lc:left-paren "\\boldsymbol{\\left( \\right.} ")
+  (lc:right-paren " \\boldsymbol{\\left. \\right)}"))
+
 (when (spaced?)
-  (lc:left-paren "\\left(\\ ")
-  (lc:right-paren "\\ \\right)")
+  (lc:left-paren (string-append (lc:left-paren) "\\ "))
+  (lc:right-paren (string-append " \\" (lc:right-paren)))
   (lc:lambda (string-append (lc:lambda) "\\ "))
   (lc:abstraction-separator (string-append "\\ " (lc:abstraction-separator) "\\ ")))
 
