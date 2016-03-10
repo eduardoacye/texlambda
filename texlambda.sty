@@ -4,14 +4,35 @@
 \RequirePackage{suffix}
 \RequirePackage{amsmath}
 \RequirePackage{amsfonts}
+\RequirePackage{xifthen}
+\RequirePackage{etoolbox}
 
-\newcommand{\lc}[1]{\immediate\write18{\unexpanded{./texlambda -e " #1 " > lc-buf.tex}} \input{lc-buf.tex}}
+\newcommand{\LcFlags}{}
+\newcommand{\lcflags}[1]{
+  \ifthenelse{\equal{#1}{}}{
+    \renewcommand{\LcFlags}{}
+  }{
+    \renewcommand{\LcFlags}{-#1}
+  }
+}
 
-\WithSuffix\newcommand\lc*[1]{\immediate\write18{\unexpanded{./texlambda " #1 " > lc-buf.tex}} \input{lc-buf.tex}}
+\newcommand\lc[2][]{%
+  \ifstrempty{#1}{%
+    % Si no se pasan banderas se utilizan las que están en la variable \LcFlags.
+    \immediate\write18{\unexpanded{./texlambda -e} \LcFlags \unexpanded{ " #2 " > lc-buf.tex}} \input{lc-buf.tex}
+  }{%
+    % Si se pasan banderas, se utilizan.
+    \immediate\write18{\unexpanded{./texlambda -e -#1 " #2 " > lc-buf.tex}} \input{lc-buf.tex}
+  }%
+}
 
-\newcommand{\lca}[2]{\immediate\write18{\unexpanded{./texlambda -e -#2 " #1 " > lc-buf.tex}} \input{lc-buf.tex}}
-
-\WithSuffix\newcommand\lca*[2]{\immediate\write18{\unexpanded{./texlambda -#2 " #1 " > lc-buf.tex}} \input{lc-buf.tex}}
+\WithSuffix\newcommand\lc*[2][]{
+  \ifstrempty{#1}{
+    \immediate\write18{\unexpanded{./texlambda } \LcFlags \unexpanded{ " #2 " > lc-buf.tex}} \input{lc-buf.tex}
+  }{
+    \immediate\write18{\unexpanded{./texlambda -#1 " #2 " > lc-buf.tex}} \input{lc-buf.tex}
+  }
+}
 
 \newcommand{\betaredu}{$\beta$-reducción}
 
