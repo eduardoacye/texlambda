@@ -10,7 +10,7 @@
 \usepackage[spanish]{babel}
 \usepackage[utf8]{inputenc}
 \usepackage{texlambda}
-\usepackage{concmath}
+%\usepackage{concmath}
 
 \begin{document}
 
@@ -99,9 +99,9 @@ Escribiendo \texttt{\textbackslash lc*\{((((\textbackslash x.(\textbackslash y.(
 
 \subsection*{Estilos}
 
-Para obtener diferentes estilos de términos, se puede utilizar el comando \texttt{\textbackslash lca\{x\}\{args\}}, donde \texttt{x} es un término lambda como en los anteriores comandos y \texttt{args} son las banderas (o \emph{flags}) que determinan el formato del término.\\
+Para obtener diferentes estilos de términos, se puede utilizar el comando \texttt{\textbackslash lc\{x\}} con argumentos extras: \texttt{\textbackslash lc[args]\{x\}}, donde \texttt{x} es un término lambda como en los anteriores comandos y \texttt{args} son las banderas (o \emph{flags}) que determinan el formato del término.\\
 
-Las banderas admitidas son \texttt{s}, \texttt{v}, \texttt{l} y \texttt{d}. Si ejecutas el comando \texttt{./texlambda --help} obtendrás la siguiente descripción de las banderas:
+Las banderas admitidas son \texttt{s}, \texttt{v}, \texttt{l}, \texttt{d} y \texttt{p}. Si ejecutas el comando \texttt{./texlambda --help} obtendrás la siguiente descripción de las banderas:
 
 \begin{verbatim}
 TeX-LaMbDa [ <option> ... ] <str>
@@ -110,6 +110,7 @@ TeX-LaMbDa [ <option> ... ] <str>
   -v, --bold-variables : Bold variables mode - Make variable names bold
   -l, --bold-lambdas : Bold lambdas mode - Makes lambdas bold
   -d, --bold-dots : Bold dots mode - Makes dots bold
+  -p, --bold-parentheses : Bold parentheses mode - Makes parentheses bold
   -e, --explicit : Explicit mode - Removes abuse of notation
   --help, -h : Show this help
   -- : Do not treat any remaining argument as a switch (at this level)
@@ -117,26 +118,44 @@ TeX-LaMbDa [ <option> ... ] <str>
   example: `-h-' is the same as `-h --'
 \end{verbatim}
 
-El modo explícito es controlado por el modificador estrella en los comandos \texttt{lc} y \texttt{lca}, así que no debes utilizar la bandera \texttt{e}.\\
+El modo explícito es controlado por el modificador estrella en el comando \texttt{lc}, así que no debes utilizar la bandera \texttt{e}.\\
 
 \subsection*{Ejemplos de modificación de estilos}
-Por ejemplo, para obtener ``\emph{negritas}'' en las lambdas y puntos, se utiliza el comando \texttt{\textbackslash lca\{x\}\{ld\}}, también sirve usar como banderas \texttt{dl} ya que el orden no importa:
+Por ejemplo, para obtener ``\emph{negritas}'' en las lambdas y puntos, se utiliza el comando \texttt{\textbackslash lc[ld]\{x\}}, también sirve usar como banderas \texttt{dl} ya que el orden no importa:
 
-\[ \lca{(\x y z. x z(y z)) u v w}{ld} \]\\
+\[ \lc[ld]{(\x y z. x z(y z)) u v w} \]\\
 
-Si queremos tener únicamente los átomos en ``\emph{negritas}'' se escribe \texttt{\textbackslash lca\{x\}\{v\}}:
+Si queremos tener únicamente los átomos en ``\emph{negritas}'' se escribe \texttt{\textbackslash lc[v]\{x\}}:
 
-\[ \lca{(\x y z. x z(y z)) u v w}{v} \]\\
+\[ \lc[v]{(\x y z. x z(y z)) u v w} \]\\
 
-La versión no explícita de este término sería \texttt{\textbackslash lca*\{x\}\{v\}}:
+La versión no explícita de este término sería \texttt{\textbackslash lc*[v]\{x\}}:
 
-\[ \lca*{(\x y z. x z(y z)) u v w}{v} \]\\
+\[ \lc*[v]{(\x y z. x z(y z)) u v w} \]\\
 
-Y si deseamos un término lambda mas espaciado se puede utilizar \texttt{\textbackslash lca*\{x\}\{vs\}}:
+Y si deseamos un término lambda mas espaciado se puede utilizar \texttt{\textbackslash lc*[vs]\{x\}}:
 
-\[ \lca*{(\x y z. x z(y z)) u v w}{sv} \]\\
+\[ \lc*[vs]{(\x y z. x z(y z)) u v w} \]\\
 
-Por el momento es lo único que puede estilizar el programa \texttt{texlambda}, sin embargo estoy trabajando en poder poner en negritas los paréntesis y poder realizar con comandos de latex y de manera declarativa \betaredu\ y \alphaconv.\\
+Si queremos tener todo en ``\emph{negritas}'' excepto las variables, utilizamos \texttt{\textbackslash lc[pdl]\{x\}}:
+
+\[ \lc[pdl]{(\x y z. x z(y z)) u v w} \]\\
+
+Y con \texttt{\textbackslash lc*[pdl]\{x\}}:
+
+\[ \lc*[pdl]{(\x y z. x z(y z)) u v w} \]\\
+
+Es posible asignar las banderas por defecto utilizando el comando \texttt{\textbackslash lcflags\{args\}}, de tal manera que si se asignan banderas utilizando este comando, todos los términos lambda escritos con \texttt{\textbackslash lc} o \texttt{\textbackslash lc*} sin argumentos extra, utilizarán estas banderas. Por ejemplo al escribir \texttt{\textbackslash lcflags\{pld\}}:
+\lcflags{pdl}
+\begin{itemize}
+\item[\S] Escribiendo \texttt{\textbackslash lc\{\textbackslash f x.f(f(f(f x)))\}} se obtiene \( \lc{\f x.f(f(f(f x)))} \)
+\item[\S] Escribiendo \texttt{\textbackslash lc*\{\textbackslash f x.f(f(f(f x)))\}} se obtiene \( \lc*{\f x.f(f(f(f x)))} \)
+\end{itemize}
+\lcflags{}
+
+Con este comando se pueden redefinir las banderas y escribiendo \texttt{\textbackslash lcflags\{\}} se eliminan, regresando a los valores por defecto originales.\\
+
+Por el momento es lo único que puede estilizar el programa \texttt{texlambda}, sin embargo estoy trabajando en poder realizar con comandos de latex y de manera declarativa \betaredu\ y \alphaconv.\\
 
 \subsection*{Operaciones y equivalencias}
 
@@ -153,3 +172,7 @@ El paquete \TeXLaMbDa también tiene algunos comandos para escribir operaciones 
 Hacen falta muchas para completar las que utilizaré en mi tesis de licenciatura, sin embargo, aún no establezco una notación fija para las operaciones.
 
 \end{document}
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
