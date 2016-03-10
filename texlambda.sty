@@ -1,0 +1,29 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{texlambda}[2016/03/09 Typesetting for the untyped lambda calculus]
+
+\RequirePackage{suffix}
+\RequirePackage{amsmath}
+\RequirePackage{amsfonts}
+
+\newcommand{\lc}[1]{\immediate\write18{\unexpanded{./texlambda -e " #1 " > lc-buf.tex}} \input{lc-buf.tex}}
+
+\WithSuffix\newcommand\lc*[1]{\immediate\write18{\unexpanded{./texlambda " #1 " > lc-buf.tex}} \input{lc-buf.tex}}
+
+\newcommand{\lca}[2]{\immediate\write18{\unexpanded{./texlambda -e -#2 " #1 " > lc-buf.tex}} \input{lc-buf.tex}}
+
+\WithSuffix\newcommand\lca*[2]{\immediate\write18{\unexpanded{./texlambda -#2 " #1 " > lc-buf.tex}} \input{lc-buf.tex}}
+
+\newcommand{\betaredu}{$\beta$-reducción}
+
+\newcommand{\alphaconv}{$\alpha$-conversión}
+
+\newcommand{\alphacong}{$\alpha$-congruente}
+
+\newcommand{\synteq}{\equiv}
+
+\newcommand{\termlen}[1]{\left\lVert#1\right\rVert}
+
+
+\DeclareRobustCommand{\TeXLaMbDa}{
+  \TeX-$\mathcal{L\!\!{\scriptstyle A}\!M\!^{B}\!D\!}\boldsymbol{{\scriptstyle \lambda}}$
+}
