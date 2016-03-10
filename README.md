@@ -1,4 +1,4 @@
-[TeX-LaMbDa logo](/img/texlambda-logo.png)
+![TeX-LaMbDa logo](/img/texlambda-logo.png)
 
 texlambda es un paquete de LaTeX para darle formato a términos bien formados del cálculo lambda sin tipos.
 
