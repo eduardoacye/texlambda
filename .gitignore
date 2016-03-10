@@ -1,3 +1,9 @@
+## Emacs auto directory
+auto
+
+## texlambda temporary buffer
+lc-buf.tex
+
 ## Core latex/pdflatex auxiliary files:
 *.aux
 *.lof
