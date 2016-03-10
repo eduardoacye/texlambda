@@ -4,6 +4,8 @@ texlambda es un paquete de LaTeX para darle formato a términos bien formados de
 
 Es necesario tener instalado Racket para crear el ejecutable `texlambda`, pero el código fuente puede ser modificado para ejecutarlo como script.
 
+Este repositorio debe de ser copiado en `/usr/share/texmf-dist/tex/latex/` para ser utilizado.
+
 ---
 
 texlambda is a LaTeX package for typesetting well formed terms in the untyped lambda calculus.
