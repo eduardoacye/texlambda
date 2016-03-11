@@ -4,7 +4,15 @@ texlambda es un paquete de LaTeX para darle formato a términos bien formados de
 
 Es necesario tener instalado Racket para crear el ejecutable `texlambda`, pero el código fuente puede ser modificado para ejecutarlo como script.
 
-Este repositorio debe de ser copiado en `/usr/share/texmf-dist/tex/latex/` para ser utilizado.
+Este repositorio debe de ser copiado en `/usr/share/texmf-dist/tex/latex/` para ser utilizado y el ejecutable `texlambda` debe estar en la variable de entorno `PATH`.
+
+Si tienes contemplado utilizar este paquete en un sistema operativo como Windows o MacOS, puedes crear el ejecutable a partir del archivo `texlambda.rkt` de la siguiente manera:
+
+```bash
+$ raco exe -o texlambda texlambda.rkt
+```
+
+O utilizando DrRacket haciendo clic en `Racket - Create Executable... - Create` con las opciones `Stand-alone` en `Type`  y `Racket` en `Base`.
 
 ---
 

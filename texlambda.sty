@@ -19,18 +19,18 @@
 \newcommand\lc[2][]{%
   \ifstrempty{#1}{%
     % Si no se pasan banderas se utilizan las que están en la variable \LcFlags.
-    \immediate\write18{\unexpanded{./texlambda -e} \LcFlags \unexpanded{ " #2 " > lc-buf.tex}} \input{lc-buf.tex}
+    \immediate\write18{\unexpanded{texlambda -e} \LcFlags \unexpanded{ " #2 " > lc-buf.tex}} \input{lc-buf.tex}
   }{%
     % Si se pasan banderas, se utilizan.
-    \immediate\write18{\unexpanded{./texlambda -e -#1 " #2 " > lc-buf.tex}} \input{lc-buf.tex}
+    \immediate\write18{\unexpanded{texlambda -e -#1 " #2 " > lc-buf.tex}} \input{lc-buf.tex}
   }%
 }
 
 \WithSuffix\newcommand\lc*[2][]{
   \ifstrempty{#1}{
-    \immediate\write18{\unexpanded{./texlambda } \LcFlags \unexpanded{ " #2 " > lc-buf.tex}} \input{lc-buf.tex}
+    \immediate\write18{\unexpanded{texlambda } \LcFlags \unexpanded{ " #2 " > lc-buf.tex}} \input{lc-buf.tex}
   }{
-    \immediate\write18{\unexpanded{./texlambda -#1 " #2 " > lc-buf.tex}} \input{lc-buf.tex}
+    \immediate\write18{\unexpanded{texlambda -#1 " #2 " > lc-buf.tex}} \input{lc-buf.tex}
   }
 }
 
