@@ -14,6 +14,8 @@ $ raco exe -o texlambda texlambda.rkt
 
 O utilizando DrRacket haciendo clic en `Racket - Create Executable... - Create` con las opciones `Stand-alone` en `Type`  y `Racket` en `Base`.
 
+Para que el programa `texlambda` pueda ser utilizado desde latex, se tiene que utilizar `--shell-escape` al momento de compilar los archivos `.tex`.
+
 ---
 
 texlambda is a LaTeX package for typesetting well formed terms in the untyped lambda calculus.
