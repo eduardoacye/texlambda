@@ -1,6 +1,10 @@
 #lang racket/base
 (require racket/cmdline)
 (require racket/match)
+(require racket/date)
+(require racket/set)
+(require racket/system)
+(require racket/file)
 
 (struct atm (s)   #:transparent)
 (struct app (f x) #:transparent)
@@ -9,8 +13,8 @@
 
 ;; READER
 
-(define *terminator-delimiters* '(#\] #\) #\. #\,))
-(define *accumulator-delimiters* '(#\[ #\( #\λ #\\))
+(define *terminator-delimiters* '(#\} #\] #\) #\. #\,))
+(define *accumulator-delimiters* '(#\{ #\[ #\( #\λ #\\))
 
 (define (terminator-delimiter? c)
   (or (eof-object? c)
@@ -145,6 +149,127 @@
         [else
          expr]))
 
+;; TEXLAMBDA
+
+(define (format-tex-atm s)
+  (format "~a" s))
+
+(define (format-tex-fun a b)
+  (format "(\\lambda\\ ~a\\ .\\ ~a)" (format-tex a) (format-tex b)))
+
+(define (format-tex-app f x)
+  (format "(~a\\ ~a)" (format-tex f) (format-tex x)))
+
+(define (format-tex-cmd c l)
+  (format "\\texttt{~a[} ~a \\texttt{]}" c (format-tex-list l ",")))
+
+(define (format-tex-list l sep)
+  (cond [(null? l) ""]
+        [(null? (cdr l)) (format "~a" (format-tex (car l)))]
+        [else (format "~a~a~a" (format-tex (car l)) sep (format-tex-list (cdr l) sep))]))
+
+(define (format-tex term)
+  (match term
+    [(atm s)   (format-tex-atm s)]
+    [(fun a b) (format-tex-fun a b)]
+    [(app f x) (format-tex-app f x)]
+    [(cmd c l)
+     (match c
+       ['tex* (format-tex* (car l))]
+       [_ (format-tex-cmd c l)])]
+    [x         (format "\\texttt{~a}" x)]))
+
+(define (format-tex-list* l sep)
+  (cond [(null? l) ""]
+        [(null? (cdr l)) (format "~a" (format-tex* (car l)))]
+        [else (format "~a~a~a" (format-tex* (car l)) sep (format-tex-list* (cdr l) sep))]))
+
+(define (format-tex-fun* arg body)
+  (match body
+    [(fun a b) (format-tex-fun* (if (list? arg) (cons a arg) (list a arg)) b)]
+    [_ (format "\\lambda\\ ~a\\ .\\ ~a"
+               (if (list? arg) (format-tex-list* (reverse arg) "\\ ") (format-tex* arg))
+               (format-tex* body))]))
+
+(define (format-tex-app* M N)
+  (match (app M N)
+    [(app (atm x) (atm y))     (format "~a\\ ~a"     (format-tex* M) (format-tex* N))]
+    [(app (atm x) (app P Q))   (format "~a\\ (~a)"   (format-tex* M) (format-tex* N))]
+    [(app (atm x) (fun y P))   (format "~a\\ (~a)"   (format-tex* M) (format-tex* N))]
+    [(app (atm x) y)           (format "(~a\\ ~a)"   (format-tex* M) (format-tex* N))]
+    [(app (app P Q) (atm y))   (format "~a\\ ~a"     (format-tex* M) (format-tex* N))]
+    [(app (app P Q) (app R S)) (format "~a\\ (~a)"   (format-tex* M) (format-tex* N))]
+    [(app (app P Q) (fun y R)) (format "~a\\ (~a)"   (format-tex* M) (format-tex* N))]
+    [(app (app P Q) y)         (format "(~a\\ ~a)"   (format-tex* M) (format-tex* N))]
+    [(app (fun x P) (atm y))   (format "(~a)\\ ~a"   (format-tex* M) (format-tex* N))]
+    [(app (fun x P) (app R S)) (format "(~a)\\ (~a)" (format-tex* M) (format-tex* N))]
+    [(app (fun x P) (fun y R)) (format "(~a)\\ (~a)" (format-tex* M) (format-tex* N))]
+    [(app (fun x P) y)         (format "(~a\\ ~a)"   (format-tex* M) (format-tex* N))]))
+
+(define (format-tex* term)
+  (match term
+    [(atm s)   (format-tex-atm s)]
+    [(fun a b) (format-tex-fun* a b)]
+    [(app f x) (format-tex-app* f x)]
+    [(cmd c l)
+     (match c
+       ['tex (format-tex (car l))]
+       [_    (format-tex-cmd c l)])]
+    [x         (format "\\texttt{~a}" x)]))
+
+(define (tex-process-file filename)
+  (call-with-input-file filename
+    (lambda (in)
+      (call-with-output-file (string-append "./lambda-cache/" filename)
+        (lambda (out)
+          (let loop ([braces? #f])
+            (cond
+              [(eof-object? (peek-char in)) #t]
+              [(string=? "\\lc{" (peek-string 4 0 in))
+               (read-string 4 in)
+               (let ([term (eval-expr (read-expr in))])
+                 (display (format-tex term) out))
+               (loop #t)]
+              [(string=? "\\lc*{" (peek-string 5 0 in))
+               (read-string 5 in)
+               (let ([term (eval-expr (read-expr in))])
+                 (display (format-tex* term) out))
+               (loop #t)]
+              [(char=? (peek-char in) #\})
+               (if braces? (read-char in) (write-char (read-char in) out))
+               (loop #f)]
+              [(string=? "\\input{" (peek-string 7 0 in))
+               (write-string (read-string 7 in) out)
+               (let loop ([c   (peek-char in)]
+                          [lis null])
+                 (if (char=? c #\})
+                     (let ([ref (list->string (reverse lis))])
+                       (display (format "Detected reference to ~a in ~a\n" ref filename))
+                       (write-string ref out)
+                       (write-char #\} out))
+                     (begin
+                       (write-char (read-char in) out)
+                       (loop (peek-char in) (cons c lis)))))
+               (loop braces?)]
+              [else
+               (write-char (read-char in) out)
+               (loop braces?)])))))))
+
+(define (texlambda entry)
+  ;; TODO
+  (delete-directory/files	"./lambda-cache")
+  (make-directory "./lambda-cache")
+  (let ([entry-tex (string-append entry ".tex")])
+    (if (file-exists? entry-tex)
+        (tex-process-file entry-tex)
+        (error 'texlambda "file ~a doesn't exist" entry-tex))
+    (current-directory "./lambda-cache")
+    (system (format "pdflatex -draftmode -interaction=batchmode ~a >/dev/null" entry))
+    (system (format "bibtex ~a >/dev/null" entry))
+    (system (format "pdflatex -draftmode -interaction=batchmode ~a >/dev/null" entry))
+    (system (format "pdflatex -interaction=batchmode ~a >/dev/null" entry))))
+
+
 ;; RUNTIME
 
 (define (cmd:numeral term)
@@ -152,17 +277,30 @@
     [(fun (atm f) (fun (atm x) body))
      (let loop ([body body])
        (match body
-         [(atm x) 0]
-         [(app (atm f) x) (+ 1 (loop x))]
+         [(== (atm x)) 0]
+         [(app (== (atm f)) body) (+ 1 (loop body))]
          [_
           (error 'numeral "Malformed Church encoding, see numeral[help]")]))]
     [(atm 'help)
-     (display (format "Church encoding for a number `n' is =α λf x.f(f(... (f x))) with n f's"))]
+     (display
+      (format ";Church encoding for a number `n' is =α λf x.f(f(... (f x))) with n f's\n"))]
     [_
      (error 'numeral "Malformed Church encoding, see numeral[help]")]))
 
-(define (cmd:quote term)
-  term)
+(define (cmd:quote expr)
+  (match expr
+    [(atm s) expr]
+    [(app f x) (app (cmd:quote f) (cmd:quote x))]
+    [(fun a b) (fun (cmd:quote a) (cmd:quote b))]
+    [(cmd c l)
+     (match c
+       ['u (eval-expr (car l))]
+       [_  (cmd c (map cmd:quote l))])]
+    [_
+     expr]))
+
+(define (cmd:unquote expr)
+  (eval-expr expr))
 
 (define *commands*
   (hasheq
@@ -171,11 +309,14 @@
    'fun fun
    'cmd cmd
    'numeral cmd:numeral
+   'tex format-tex
+   'tex* format-tex*
    'exit exit))
 
 (define *meta*
   (hasheq
-   'quote cmd:quote))
+   'q cmd:quote
+   'u cmd:unquote))
 
 ;; READ EVAL PRINT LOOP
 
@@ -190,23 +331,19 @@
                           (read-expr (open-input-string str)))))]
                  [current-eval
                   (lambda (expr) (eval-expr (cdr expr)))])
+    (display "REPL ready, press any key to start...")
+    (flush-output)
     (read-line)
     (read-eval-print-loop)))
 
-;; TEXLAMBDA
-
-(define (texlambda entry)
-  ;; TODO
-  '())
-
 ;; COMMAND LINE INTERFACE
 
-(define cmdln-repl? (make-parameter #f))
-(define cmdln-file? (make-parameter #f))
-(define cmdln-filename (make-parameter #f))
-(define cmdln-expr? (make-parameter #f))
-(define cmdln-expr (make-parameter #f))
-(define cmdln-latex? (make-parameter #f))
+(define cmdln-repl?       (make-parameter #f))
+(define cmdln-file?       (make-parameter #f))
+(define cmdln-filename    (make-parameter #f))
+(define cmdln-expr?       (make-parameter #f))
+(define cmdln-expr        (make-parameter #f))
+(define cmdln-latex?      (make-parameter #f))
 (define cmdln-latex-entry (make-parameter #f))
 
 (define console-args
