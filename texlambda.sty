@@ -7,30 +7,33 @@
 \RequirePackage{xifthen}
 \RequirePackage{etoolbox}
 
-\newcommand{\LcFlags}{}
-\newcommand{\lcflags}[1]{
-  \ifthenelse{\equal{#1}{}}{
-    \renewcommand{\LcFlags}{}
+\newcommand\lc[2][]{%
+  \PackageError{texlambda}{
+    Attempting to use lc command.
   }{
-    \renewcommand{\LcFlags}{-#1}
+    The correct usage of the lc and lc* commands is with the lambda program
+    using the -l flag with the entry point of the latex document.
+
+    You must compile lambda.rkt (distributed with this file) using the command
+    raco exe lambda.rkt and then place the executable in your PATH (for example
+    in /usr/bin/lambda), after that, the compilation of the document must be
+    with the command lambda -l main_file where main_file is the entry point of
+    the document (without file extension).
   }
 }
 
-\newcommand\lc[2][]{%
-  \ifstrempty{#1}{%
-    % Si no se pasan banderas se utilizan las que están en la variable \LcFlags.
-    \immediate\write18{\unexpanded{texlambda -e} \LcFlags \unexpanded{ " #2 " > lc-buf.tex}} \input{lc-buf.tex}
-  }{%
-    % Si se pasan banderas, se utilizan.
-    \immediate\write18{\unexpanded{texlambda -e -#1 " #2 " > lc-buf.tex}} \input{lc-buf.tex}
-  }%
-}
-
 \WithSuffix\newcommand\lc*[2][]{
-  \ifstrempty{#1}{
-    \immediate\write18{\unexpanded{texlambda } \LcFlags \unexpanded{ " #2 " > lc-buf.tex}} \input{lc-buf.tex}
+  \PackageError{texlambda}{
+    Attempting to use lc* command.
   }{
-    \immediate\write18{\unexpanded{texlambda -#1 " #2 " > lc-buf.tex}} \input{lc-buf.tex}
+    The correct usage of the lc and lc* commands is with the lambda program
+    using the -l flag with the entry point of the latex document.
+
+    You must compile lambda.rkt (distributed with this file) using the command
+    raco exe lambda.rkt and then place the executable in your PATH (for example
+    in /usr/bin/lambda), after that, the compilation of the document must be
+    with the command lambda -l main_file where main_file is the entry point of
+    the document (without file extension).
   }
 }
 
