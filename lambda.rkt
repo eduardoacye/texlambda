@@ -268,20 +268,37 @@
                (write-char (read-char in) out)
                (loop braces?)])))))))
 
+(define cache-dir (make-parameter "./lambda-cache"))
+
+(define (file-extension name ext)
+  (string-append name ext))
+
+(define (cache-path filename)
+  (string-append (cache-dir) filename))
+
+(define (build-tex-draft entry)
+  (system (format "pdflatex -draftmode -interaction=batchmode ~a >/dev/null" entry)))
+
+(define (build-tex-bib entry)
+  (system (format "bibtex ~a >/dev/null" entry)))
+
+(define (build-tex-complete entry)
+  (system (format "pdflatex -interaction=batchmode -shell-escape ~a >/dev/null" entry)))
+
+(define (build-tex-document entry)
+  (current-directory (cache-dir))
+  (build-tex-draft entry)
+  (build-tex-bib entry)
+  (build-tex-draft entry)
+  (build-tex-complete entry))
+
 (define (texlambda entry)
   ;; TODO
-  (when (directory-exists? "./lambda-cache")
-    (delete-directory/files	"./lambda-cache"))
-  (make-directory "./lambda-cache")
-  (let ([entry-tex (string-append entry ".tex")])
-    (if (file-exists? entry-tex)
-        (tex-process-file entry-tex)
-        (error 'texlambda "file ~a doesn't exist" entry-tex))
-    (current-directory "./lambda-cache")
-    (system (format "pdflatex -draftmode -interaction=batchmode ~a >/dev/null" entry))
-    (system (format "bibtex ~a >/dev/null" entry))
-    (system (format "pdflatex -draftmode -interaction=batchmode ~a >/dev/null" entry))
-    (system (format "pdflatex -interaction=batchmode -shell-escape ~a >/dev/null" entry))))
+  (when (directory-exists? (cache-dir))
+    (delete-directory/files	(cache-dir)))
+  (make-directory (cache-dir))
+  (tex-process-file (file-extension entry ".tex"))
+  (build-tex-document entry))
 
 
 ;; RUNTIME
