@@ -5,6 +5,7 @@
 (require racket/set)
 (require racket/system)
 (require racket/file)
+(require racket/fasl)
 
 (struct atm (s)   #:transparent)
 (struct app (f x) #:transparent)
@@ -217,10 +218,27 @@
        [_    (format-tex-cmd c l)])]
     [x         (format "\\texttt{~a}" x)]))
 
+(define cache-dir (make-parameter "./lambda-cache/"))
+
+(define (file-extension name ext)
+  (string-append name ext))
+
+(define (cache-path filename)
+  (string-append (cache-dir) filename))
+
+(define (tex-before-curly in out)
+  (let loop [(c   (peek-char in))
+             (lis null)]
+    (if (char=? c #\})
+        (list->string (reverse lis))
+        (begin
+          (write-char (read-char in) out)
+          (loop (peek-char in) (cons c lis))))))
+
 (define (tex-process-file filename)
   (call-with-input-file filename
     (lambda (in)
-      (call-with-output-file (string-append "./lambda-cache/" filename)
+      (call-with-output-file (cache-path filename)
         (lambda (out)
           (let loop ([braces? #f])
             (cond
@@ -240,41 +258,20 @@
                (loop #f)]
               [(string=? "\\input{" (peek-string 7 0 in))
                (write-string (read-string 7 in) out)
-               (let loop ([c   (peek-char in)]
-                          [lis null])
-                 (if (char=? c #\})
-                     (let ([ref (list->string (reverse lis))])
-                       (let ([ref-filename (string-append ref ".tex")])
-                         (unless (file-exists? (string-append "./lambda-cache/" ref-filename))
-                           (tex-process-file ref-filename))))
-                     (begin
-                       (write-char (read-char in) out)
-                       (loop (peek-char in) (cons c lis)))))
+               (let ([ref (tex-before-curly in out)])
+                 (unless (file-exists? (string-append "./lambda-cache/" ref ".tex"))
+                   (tex-process-file (string-append ref ".tex"))))
                (loop braces?)]
               [(string=? "\\bibliography{" (peek-string 14 0 in))
                (write-string (read-string 14 in) out)
-               (let loop ([c   (peek-char in)]
-                          [lis null])
-                 (if (char=? c #\})
-                     (let ([bib (list->string (reverse lis))])
-                       (unless (file-exists? (string-append "./lambda-cache/" bib ".bib"))
-                         (copy-file (string-append bib ".bib")
-                                    (string-append "./lambda-cache/" bib ".bib"))))
-                     (begin
-                       (write-char (read-char in) out)
-                       (loop (peek-char in) (cons c lis)))))
+               (let ([bib (tex-before-curly in out)])
+                 (unless (file-exists? (string-append "./lambda-cache/" bib ".bib"))
+                   (copy-file (string-append bib ".bib")
+                              (string-append "./lambda-cache/" bib ".bib"))))
                (loop braces?)]
               [else
                (write-char (read-char in) out)
                (loop braces?)])))))))
-
-(define cache-dir (make-parameter "./lambda-cache"))
-
-(define (file-extension name ext)
-  (string-append name ext))
-
-(define (cache-path filename)
-  (string-append (cache-dir) filename))
 
 (define (build-tex-draft entry)
   (system (format "pdflatex -draftmode -interaction=batchmode ~a >/dev/null" entry)))
@@ -293,7 +290,7 @@
   (build-tex-complete entry))
 
 (define (texlambda entry)
-  ;; TODO
+  ;; TODO implement file cache (if hasn't been modified, why not preserve previous?)
   (when (directory-exists? (cache-dir))
     (delete-directory/files	(cache-dir)))
   (make-directory (cache-dir))
