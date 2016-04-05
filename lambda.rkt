@@ -248,7 +248,7 @@
                        (let ([ref-filename (string-append ref ".tex")])
                          (display (format "Checking if ~a exists\n"
                                           (string-append "./lambda-cache" ref-filename)))
-                         (unless (file-exists? (string-append "./lambda-cache" ref-filename))
+                         (unless (file-exists? (string-append "./lambda-cache/" ref-filename))
                            (display (format "The file doesn't exist\n"))
                            (tex-process-file ref-filename))))
                      (begin
