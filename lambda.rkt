@@ -246,7 +246,10 @@
                      (let ([ref (list->string (reverse lis))])
                        (display (format "Detected reference to ~a in ~a\n" ref filename))
                        (let ([ref-filename (string-append ref ".tex")])
+                         (display (format "Checking if ~a exists\n"
+                                          (string-append "./lambda-cache" ref-filename)))
                          (unless (file-exists? (string-append "./lambda-cache" ref-filename))
+                           (display (format "The file doesn't exist\n"))
                            (tex-process-file ref-filename))))
                      (begin
                        (write-char (read-char in) out)
