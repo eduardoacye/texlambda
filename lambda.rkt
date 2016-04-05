@@ -245,7 +245,9 @@
                  (if (char=? c #\})
                      (let ([ref (list->string (reverse lis))])
                        (display (format "Detected reference to ~a in ~a\n" ref filename))
-                       (tex-process-file (string-append ref ".tex")))
+                       (let ([ref-filename (string-append ref ".tex")])
+                         (unless (file-exists? (string-append ref-filename ".tex"))
+                           (tex-process-file ref-filename))))
                      (begin
                        (write-char (read-char in) out)
                        (loop (peek-char in) (cons c lis)))))
