@@ -245,8 +245,7 @@
                  (if (char=? c #\})
                      (let ([ref (list->string (reverse lis))])
                        (display (format "Detected reference to ~a in ~a\n" ref filename))
-                       (write-string ref out)
-                       (write-char #\} out))
+                       (tex-process-file (string-append ref ".tex")))
                      (begin
                        (write-char (read-char in) out)
                        (loop (peek-char in) (cons c lis)))))
@@ -257,7 +256,8 @@
 
 (define (texlambda entry)
   ;; TODO
-  (delete-directory/files	"./lambda-cache")
+  (when (directory-exists? "./lambda-cache")
+    (delete-directory/files	"./lambda-cache"))
   (make-directory "./lambda-cache")
   (let ([entry-tex (string-append entry ".tex")])
     (if (file-exists? entry-tex)
