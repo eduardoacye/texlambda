@@ -251,6 +251,19 @@
                        (write-char (read-char in) out)
                        (loop (peek-char in) (cons c lis)))))
                (loop braces?)]
+              [(string=? "\\bibliography{" (peek-string 14 0 in))
+               (write-string (read-string 14 in) out)
+               (let loop ([c   (peek-char in)]
+                          [lis null])
+                 (if (char=? c #\})
+                     (let ([bib (list->string (reverse lis))])
+                       (unless (file-exists? (string-append "./lambda-cache/" bib ".bib"))
+                         (copy-file (string-append bib ".bib")
+                                    (string-append "./lambda-cache/" bib ".bib"))))
+                     (begin
+                       (write-char (read-char in) out)
+                       (loop (peek-char in) (cons c lis)))))
+               (loop braces?)]
               [else
                (write-char (read-char in) out)
                (loop braces?)])))))))
@@ -268,7 +281,7 @@
     (system (format "pdflatex -draftmode -interaction=batchmode ~a >/dev/null" entry))
     (system (format "bibtex ~a >/dev/null" entry))
     (system (format "pdflatex -draftmode -interaction=batchmode ~a >/dev/null" entry))
-    (system (format "pdflatex -interaction=batchmode ~a >/dev/null" entry))))
+    (system (format "pdflatex -interaction=batchmode -shell-escape ~a >/dev/null" entry))))
 
 
 ;; RUNTIME
