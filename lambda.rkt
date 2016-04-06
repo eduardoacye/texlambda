@@ -156,13 +156,13 @@
   (format "~a" s))
 
 (define (format-tex-fun a b)
-  (format "(\\lambda\\ ~a\\ .\\ ~a)" (format-tex a) (format-tex b)))
+  (format "(\\lambda ~a . ~a)" (format-tex a) (format-tex b)))
 
 (define (format-tex-app f x)
   (format "(~a\\ ~a)" (format-tex f) (format-tex x)))
 
 (define (format-tex-cmd c l)
-  (format "\\texttt{~a[} ~a \\texttt{]}" c (format-tex-list l ",")))
+  (format "\\texttt{~a[} ~a \\texttt{]}" c (format-tex-list l " \texttt{,} ")))
 
 (define (format-tex-list l sep)
   (cond [(null? l) ""]
@@ -188,7 +188,7 @@
 (define (format-tex-fun* arg body)
   (match body
     [(fun a b) (format-tex-fun* (if (list? arg) (cons a arg) (list a arg)) b)]
-    [_ (format "\\lambda\\ ~a\\ .\\ ~a"
+    [_ (format "\\lambda ~a . ~a"
                (if (list? arg) (format-tex-list* (reverse arg) "\\ ") (format-tex* arg))
                (format-tex* body))]))
 
