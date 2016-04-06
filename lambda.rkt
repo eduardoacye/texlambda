@@ -162,7 +162,7 @@
   (format "(~a\\ ~a)" (format-tex f) (format-tex x)))
 
 (define (format-tex-cmd c l)
-  (format "\\texttt{~a[} ~a \\texttt{]}" c (format-tex-list l " \texttt{,} ")))
+  (format "\\texttt{~a[} ~a \\texttt{]}" c (format-tex-list l " \\texttt{,} ")))
 
 (define (format-tex-list l sep)
   (cond [(null? l) ""]
