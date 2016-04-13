@@ -6,6 +6,7 @@
 (require racket/system)
 (require racket/file)
 (require racket/fasl)
+(require racket/list)
 
 (struct atm (s)   #:transparent)
 (struct app (f x) #:transparent)
@@ -146,7 +147,10 @@
          (cond [(hash-ref *meta* (cmd-c expr) #f)
                 => (lambda (proc) (apply proc (cmd-l expr)))]
                [(hash-ref *commands* (cmd-c expr) #f)
-                => (lambda (proc) (apply proc (map eval-expr (cmd-l expr))))])]
+                => (lambda (proc) (apply proc (map eval-expr (cmd-l expr))))]
+               [else
+                (error 'eval "Unknown command ~a called with argument list ~a"
+                       (cmd-c expr) (cmd-l expr))])]
         [else
          expr]))
 
@@ -177,6 +181,13 @@
     [(cmd c l)
      (match c
        ['tex* (format-tex* (car l))]
+       ['prime (string-append (format-tex (car l)) "^{" (make-string (cadr l) #\') "}")]
+       ['subst (format "~a[~a:=~a]"
+                       (format-tex (car l))
+                       (format-tex (cadr l))
+                       (format-tex (caddr l)))]
+       ['length (format "\\left\\| ~a \\right\\|" (format-tex (car l)))]
+       ['fv (format "FV(\\ ~a\\ )" (format-tex (car l)))]
        [_ (format-tex-cmd c l)])]
     [x         (format "\\texttt{~a}" x)]))
 
@@ -215,6 +226,13 @@
     [(cmd c l)
      (match c
        ['tex (format-tex (car l))]
+       ['prime (string-append (format-tex* (car l)) "^{" (make-string (cadr l) #\') "}")]
+       ['subst (format "~a[~a:=~a]"
+                       (format-tex* (car l))
+                       (format-tex* (cadr l))
+                       (format-tex* (caddr l)))]
+       ['length (format "\\left\\| ~a \\right\\|" (format-tex* (car l)))]
+       ['fv (format "FV(\\ ~a\\ )" (format-tex* (car l)))]
        [_    (format-tex-cmd c l)])]
     [x         (format "\\texttt{~a}" x)]))
 
@@ -330,6 +348,56 @@
 (define (cmd:unquote expr)
   (eval-expr expr))
 
+(define (cmd:fv expr)
+  (match expr
+    [(atm s) (list expr)]
+    [(app f x) (remove-duplicates (append (cmd:fv f) (cmd:fv x)))]
+    [(fun a b) (remove a (cmd:fv b))]
+    [_
+     (error 'fv "Can't compute free variables of ~a, is not a λ term" expr)]))
+
+(define (cmd:length expr)
+  (match expr
+    [(atm s) 1]
+    [(app f x) (+ (cmd:length f) (cmd:length x))]
+    [(fun a b) (+ 1 (cmd:length b))]
+    [_
+     (error 'length "Can't compute the length of ~a, is not a λ term" expr)]))
+
+(define alphabetic-strings (map (lambda (n) (string (integer->char n))) (range (char->integer #\a) (char->integer #\z))))
+
+(define (atom-from-new-symbol binding-symbols)
+  (let ([diff (set-subtract (map string->symbol alphabetic-strings) binding-symbols)])
+    (if (not (null? diff))
+        (atm (car diff))
+        (let loop ([i 0])
+          (let ([next-symbols (map (lambda (str) (string->symbol (string-append str (number->string i)))) alphabetic-strings)])
+            (let ([diff (set-subtract next-symbols binding-symbols)])
+              (if (not (null? diff))
+                  (atm (car diff))
+                  (loop (+ i 1)))))))))
+
+(define (%cmd:subst expr old-atom new-expr binding-symbols)
+  (match expr
+    [(atm s)
+     (if (equal? expr old-atom) new-expr expr)]
+    [(app f x)
+     (app (%cmd:subst f old-atom new-expr binding-symbols)
+          (%cmd:subst x old-atom new-expr binding-symbols))]
+    [(fun a b)
+     (cond
+       [(or (equal? a old-atom) (not (member old-atom (cmd:fv b))))
+        expr]
+       [(not (member a (cmd:fv new-expr)))
+        (fun a (%cmd:subst b old-atom new-expr (set-add binding-symbols (atm-s a))))]
+       [else
+        (let* ([binding-symbols (set-union binding-symbols (map atm-s (cmd:fv new-expr)) (map atm-s (cmd:fv b)))]
+               [fresh (atom-from-new-symbol binding-symbols)])
+          (fun fresh (%cmd:subst (%cmd:subst b a fresh (set-add binding-symbols (atm-s fresh))) old-atom new-expr (set-add binding-symbols (atm-s fresh)))))])]))
+
+(define (cmd:subst expr old-atom new-expr)
+  (%cmd:subst expr old-atom new-expr null))
+
 (define *commands*
   (hasheq
    'atm atm
@@ -337,6 +405,9 @@
    'fun fun
    'cmd cmd
    'numeral cmd:numeral
+   'fv cmd:fv
+   'length cmd:length
+   'subst cmd:subst
    'tex format-tex
    'tex* format-tex*
    'exit exit))
