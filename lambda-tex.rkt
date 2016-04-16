@@ -18,7 +18,7 @@
 (fmt:abstraction-sep "\\ ")
 (fmt:command-sep "\\texttt{,}")
 (fmt:lambda " \\lambda ")
-(fmt:dot "\\ .\\ ")
+(fmt:dot ".")
 (fmt:fv-name "\\mathrm{FV}")
 (fmt:length-pre "\\left\\|")
 (fmt:length-post "\\right\\|")

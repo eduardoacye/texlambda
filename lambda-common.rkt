@@ -1,3 +1,5 @@
+;; -*- coding: utf-8; mode: racket -*-
+
 #lang racket/base
 
 (require racket/match)
@@ -321,36 +323,27 @@
 
 (define (format-application applicator applicand)
   (cond
-    [(not (notation-abuse?))
-     (format "~a~a~a~a~a"
-             (fmt:left-paren) (format-expr applicator)
-             (fmt:application-sep)
-             (format-expr applicand) (fmt:right-paren))]
-    [(and (abstraction? applicator)
-          (or (atom? applicand)
-              (not (or (application? applicand) (abstraction? applicand)))))
-     (format "~a~a~a~a~a"
-             (fmt:left-paren) (format-expr applicator) (fmt:right-paren)
-             (fmt:application-sep)
-             (format-expr applicand))]
-    [(or (not (or (abstraction? applicator) (application? applicator) (atom? applicator)))
-         (not (or (abstraction? applicand)  (application? applicand)  (atom? applicand))))
-     (format "~a~a~a~a~a"
-             (fmt:left-paren) (format-expr applicator)
-             (fmt:application-sep)
-             (format-expr applicand) (fmt:right-paren))]
-    [(abstraction? applicator)
-     (format "~a~a~a~a~a~a~a"
-             (fmt:left-paren) (format-expr applicator) (fmt:right-paren)
-             (fmt:application-sep)
-             (fmt:left-paren) (format-expr applicand) (fmt:right-paren))]
-    [(atom? applicand)
+    [(notation-abuse?)
      (format "~a~a~a"
-             (format-expr applicator) (fmt:application-sep) (format-expr applicand))]
+             (if (abstraction? applicator)
+                 (format "~a~a~a"
+                         (fmt:left-paren)
+                         (format-expr applicator)
+                         (fmt:right-paren))
+                 (format-expr applicator))
+             (fmt:application-sep)
+             (if (or (application? applicand)
+                     (abstraction? applicand))
+                 (format "~a~a~a"
+                         (fmt:left-paren)
+                         (format-expr applicand)
+                         (fmt:right-paren))
+                 (format-expr applicand)))]
     [else
      (format "~a~a~a~a~a"
-             (format-expr applicator) (fmt:application-sep)
-             (fmt:left-paren) (format-expr applicand) (fmt:right-paren))]))
+             (fmt:left-paren) (format-expr applicator)
+             (fmt:application-sep)
+             (format-expr applicand) (fmt:right-paren))]))
 
 (define (format-list lis sep)
   (cond [(null? lis) ""]
