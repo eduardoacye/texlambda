@@ -1,3 +1,6 @@
+;; 2016 - Eduardo Acuña Yeomans
+;; -*- coding: utf-8; mode: racket -*-
+
 #lang racket/base
 
 (require racket/system)
@@ -7,6 +10,8 @@
 
 (require "lambda-common.rkt")
 (require "lambda-commands.rkt")
+
+;; FORMATING FOR LaTeX MATH MODE
 
 (fmt:left-paren "\\left( ")
 (fmt:right-paren " \\right)")
@@ -24,6 +29,9 @@
 (fmt:length-post "\\right\\|")
 
 (define (fmt:prime expr n)
+  ;; fmt:prime : <expr> <number> -> <string>
+  ;;
+  ;; expr^{''...'} (' n times)
   (format "~a^{~a}"
           (format-expr expr)
           (make-string n #\')))
@@ -31,6 +39,9 @@
 (install-procedure *command-formats* 'prime fmt:prime)
 
 (define (fmt:subscript expr sub)
+  ;; fmt:subscript : <expr> <expr> -> <string>
+  ;;
+  ;; expr_{sub}
   (format "~a_{~a}"
           (format-expr expr)
           (format-expr sub)))
@@ -38,6 +49,9 @@
 (install-procedure *command-formats* 'subscript fmt:subscript)
 
 (define (fmt:superscript expr sup)
+  ;; fmt:superscript : <expr> <expr> -> <string>
+  ;;
+  ;; expr^{sup}
   (format "~a^{~a}"
           (format-expr expr)
           (format-expr sup)))
@@ -45,12 +59,18 @@
 (install-procedure *command-formats* 'superscript fmt:superscript)
 
 (define (fmt:seq expr)
+  ;; fmt:seq : <expr> -> <string>
+  ;;
+  ;; \vec{expr}
   (format "\\vec{~a}"
           (format-expr expr)))
 
 (install-procedure *command-formats* 'seq fmt:seq)
 
 (define (fmt:dots pos . exprs)
+  ;; fmt:dots : <number> <expr>* -> <string>
+  ;;
+  ;; expr[1-pos] ... exprs[pos+1-n]
   (let ([head (take exprs pos)]
         [tail (drop exprs pos)])
     (format-list (append head (list "...") tail) ",")))
@@ -58,6 +78,9 @@
 (install-procedure *command-formats* 'dots fmt:dots)
 
 (define (fmt:subterm expr1 expr2)
+  ;; fmt:subterm : <expr> <expr> -> <string>
+  ;;
+  ;; expr1 ⊂ expr2
   (format "~a \\subset ~a"
           (format-expr expr1)
           (format-expr expr2)))
@@ -65,12 +88,18 @@
 (install-procedure *command-formats* 'subterm fmt:subterm)
 
 (define (fmt:subterms expr)
+  ;; fmt:subterms : <expr> -> <string>
+  ;;
+  ;; Sub(expr)
   (format "\\mathrm{Sub}\\left( ~a \\right)"
           (format-expr expr)))
 
 (install-procedure *command-formats* 'subterms fmt:subterms)
 
 (define (fmt:left-apply sup expr1 expr2)
+  ;; fmt:left-apply : <number> <expr> <expr> -> <string>
+  ;;
+  ;; (expr1^{sup} expr2)
   (format-application
    (command 'superscript (list expr1 sup))
    expr2))
@@ -78,21 +107,33 @@
 (install-procedure *command-formats* 'left-apply fmt:left-apply)
 
 (define (fmt:right-apply sup expr1 expr2)
+  ;; fmt:right-apply : <number> <expr> <expr> -> <string>
+  ;;
+  ;; (expr1 expr2^{~ sup})
   (format-application
    expr1
    (command 'superscript (list expr2 (format "\\sim ~a" (format-expr sup))))))
 
 (install-procedure *command-formats* 'right-apply fmt:right-apply)
 
-(define cache-dir (make-parameter "./lambda-cache/"))
+;; LaTeX FILE PROCESSING
+;;
+;;
+
+(define cache-dir
+  ;; String representing the directory where the processed files will be stored.
+  (make-parameter "./lambda-cache/"))
 
 (define (file-extension name ext)
+  ;; file-extension : <string> <string> -> <string>
   (string-append name ext))
 
 (define (cache-path filename)
+  ;; cache-path : <string> <string>
   (string-append (cache-dir) filename))
 
 (define (tex-before-curly in out)
+  ;; tex-before-curly : <input-port> <output-port> -> <string>
   (let loop [(c   (peek-char in))
              (lis null)]
     (if (char=? c #\})
@@ -102,6 +143,7 @@
           (loop (peek-char in) (cons c lis))))))
 
 (define (tex-process-file filename)
+  ;; tex-process-file : <string> -> #t
   (call-with-input-file filename
     (lambda (in)
       (call-with-output-file (cache-path filename)
@@ -140,15 +182,19 @@
                (loop braces?)])))))))
 
 (define (build-tex-draft entry)
+  ;; build-tex-draft : <string> -> <boolean>
   (system (format "pdflatex -draftmode -interaction=batchmode ~a >/dev/null" entry)))
 
 (define (build-tex-bib entry)
+  ;; build-tex-bib : <string> -> <boolean>
   (system (format "bibtex ~a >/dev/null" entry)))
 
 (define (build-tex-complete entry)
+  ;; build-tex-complete : <string> -> <boolean>
   (system (format "pdflatex -interaction=batchmode -shell-escape ~a >/dev/null" entry)))
 
 (define (build-tex-document entry)
+  ;; build-tex-document : <string> -> <boolean>
   (current-directory (cache-dir))
   (build-tex-draft entry)
   (build-tex-bib entry)
@@ -156,6 +202,7 @@
   (build-tex-complete entry))
 
 (define (texlambda entry)
+  ;; texlambda : <string> -> <boolean>
   (when (directory-exists? (cache-dir))
     (delete-directory/files (cache-dir)))
   (make-directory (cache-dir))

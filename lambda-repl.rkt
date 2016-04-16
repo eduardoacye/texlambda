@@ -1,3 +1,6 @@
+;; 2016 - Eduardo Acuña Yeomans
+;; -*- coding: utf-8; mode: racket -*-
+
 #lang racket/base
 
 (require racket/cmdline)
@@ -5,9 +8,10 @@
 (require "lambda-common.rkt")
 (require "lambda-commands.rkt")
 
-(provide repl)
-
 (define (repl)
+  ;; repl : <void> -> <void>
+  ;; 
+  ;; Run a Read Eval Print Loop.
   (parameterize ([current-prompt-read
                   (lambda ()
                     (display "λ> ")

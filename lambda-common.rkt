@@ -1,3 +1,4 @@
+;; 2016 - Eduardo Acuña Yeomans
 ;; -*- coding: utf-8; mode: racket -*-
 
 #lang racket/base
@@ -6,7 +7,6 @@
 
 (provide
  ;; Data types
- ;; constructor | predicate   | selectors ...
     atom          atom?         atom-symbol
     application   application?  application-applicator  application-applicand
     abstraction   abstraction?  abstraction-argument    abstraction-body
@@ -274,7 +274,7 @@
 (define (eval-expr expr)
   ;; eval-expr : <expr> -> <any>
   ;;
-  ;; Evaluate `expr' resulting from `read-expr'.
+  ;; Evaluate an expression constructed with `read-expr'.
   (cond [(atom? expr)
          expr]
         [(application? expr)
@@ -298,30 +298,87 @@
 ;;
 ;; Recursive expression printer
 
-(define fmt:atom-pre (make-parameter ""))
-(define fmt:atom-post (make-parameter ""))
-(define fmt:left-paren (make-parameter "("))
-(define fmt:right-paren (make-parameter ")"))
-(define fmt:application-sep (make-parameter " "))
-(define fmt:lambda (make-parameter "λ"))
-(define fmt:dot (make-parameter "."))
-(define fmt:abstraction-sep (make-parameter " "))
-(define fmt:command-name-pre (make-parameter ""))
-(define fmt:command-name-post (make-parameter ""))
-(define fmt:left-brack (make-parameter "["))
-(define fmt:right-brack (make-parameter "]"))
-(define fmt:command-sep (make-parameter ","))
-(define fmt:other-pre (make-parameter ""))
-(define fmt:other-post (make-parameter ""))
+;; Formatting atoms
+(define fmt:atom-pre
+  ;; Object used to format with ~a before writing the symbol.
+  (make-parameter ""))
 
-(define notation-abuse? (make-parameter #f))
+(define fmt:atom-post
+  ;; Object used to format with ~a after writing the symbol.
+  (make-parameter ""))
 
-(define *command-formats* (make-hasheq))
+;; Formatting applications
+(define fmt:application-sep
+  ;; Object used to format with ~a after the applicator and before the applicand.
+  (make-parameter " "))
+
+;; Formatting abstractions
+(define fmt:lambda
+  ;; Object used to format the lambda with ~a.
+  (make-parameter "λ"))
+
+(define fmt:dot
+  ;; Object used to format the dot with ~a.
+  (make-parameter "."))
+
+(define fmt:abstraction-sep
+  ;; Object used to format with ~a between each argument while abusing the notation.
+  (make-parameter " "))
+
+;; Formatting commands
+(define fmt:command-name-pre
+  ;; Object used to format with ~a before writing the name.
+  (make-parameter ""))
+
+(define fmt:command-name-post
+  ;; Object used to format with ~a after writing the name.
+  (make-parameter ""))
+
+(define fmt:command-sep
+  ;; Object used to format with ~a between each argument.
+  (make-parameter ","))
+
+;; Formattig other
+(define fmt:other-pre
+  ;; Object used to format with ~a before writing the value.
+  (make-parameter ""))
+
+(define fmt:other-post
+  ;; Object used to format with ~a after writing the value.
+  (make-parameter ""))
+
+;; Formatting structure
+(define fmt:left-paren
+  ;; Object used to format with ~a the left open parentheses.
+  (make-parameter "("))
+
+(define fmt:right-paren
+  ;; Object used to format with ~a the right close parentheses.
+  (make-parameter ")"))
+
+(define fmt:left-brack
+  ;; Object used to format with ~a the left open brackets.
+  (make-parameter "["))
+
+(define fmt:right-brack
+  ;; Object used to format with ~a the right close brackets.
+  (make-parameter "]"))
+
+;; Format control
+(define notation-abuse?
+  ;; Boolean parameter that determines if the abuse of notation is turned on or off.
+  (make-parameter #f))
+
+(define *command-formats*
+  ;; Table associating symbols representing a command name to a formatting procedure.
+  (make-hasheq))
 
 (define (format-atom symbol)
+  ;; format-atom : <symbol> -> <string>
   (format "~a~a~a" (fmt:atom-pre) symbol (fmt:atom-post)))
 
 (define (format-application applicator applicand)
+  ;; format-application : <expr> <expr> -> <string>
   (cond
     [(notation-abuse?)
      (format "~a~a~a"
@@ -346,6 +403,7 @@
              (format-expr applicand) (fmt:right-paren))]))
 
 (define (format-list lis sep)
+  ;; format-list : <list> <any> -> <string>
   (cond [(null? lis) ""]
         [(null? (cdr lis))
          (format-expr (car lis))]
@@ -356,6 +414,7 @@
                  (format-list (cdr lis) sep))]))
 
 (define (format-abstraction argument body)
+  ;; format-abstraction : [<atom>|<command>] <expr> -> <string>
   (cond [(notation-abuse?)
          (match body
            [(abstraction x M)
@@ -378,6 +437,7 @@
                  (fmt:right-paren))]))
 
 (define (format-command name arguments)
+  ;; format-command : <symbol> <list> -> <string>
   (cond [(hash-ref *command-formats* name #f)
          => (lambda (proc)
               (apply proc arguments))]
@@ -389,12 +449,14 @@
                  (fmt:right-brack))]))
 
 (define (format-other other)
+  ;; format-other : <any> -> <string>
   (format "~a~a~a"
           (fmt:other-pre)
           other
           (fmt:other-post)))
 
 (define (format-expr expr)
+  ;; format-expr : <expr> -> <string>
   (match expr
     [(atom symbol)                      (format-atom symbol)]
     [(application applicator applicand) (format-application applicator applicand)]
@@ -403,4 +465,5 @@
     [x                                  (format-other x)]))
 
 (define (print-expr expr [out (current-output-port)])
+  ;; print-expr : <expr> <output-port> -> <void>
   (display (format-expr expr) out))
