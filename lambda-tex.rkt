@@ -31,7 +31,11 @@
 (define (fmt:prime expr n)
   ;; fmt:prime : <expr> <number> -> <string>
   ;;
-  ;; expr^{''...'} (' n times)
+  ;; expr^{\prime ... \prime} (\prime n times)
+  ;;
+  ;; examples:
+  ;; (fmt:prime (atom 'M) 2) => $M^{\prime \prime}$
+  ;; (fmt:prime (atom 'M) 4) => $M^{\prime \prime \prime \prime}$
   (format "~a^{~a}"
           (format-expr expr)
           (make-string n #\')))
@@ -42,6 +46,10 @@
   ;; fmt:subscript : <expr> <expr> -> <string>
   ;;
   ;; expr_{sub}
+  ;;
+  ;; examples:
+  ;; (fmt:subscript (atom 'M) 2) => $M_{2}$
+  ;; (fmt:subscript (atom 'M) (abstraction (atom 'x) (atom 'x))) => $M_{(\lambda x.x)}$
   (format "~a_{~a}"
           (format-expr expr)
           (format-expr sub)))
@@ -52,6 +60,10 @@
   ;; fmt:superscript : <expr> <expr> -> <string>
   ;;
   ;; expr^{sup}
+  ;;
+  ;; examples:
+  ;; (fmt:superscript (atom 'M) 4) => $M^{4}$
+  ;; (fmt:superscript (atom 'M) (abstraction (atom 'x) (atom 'x))) => $M^{(\lambda x.x)}$
   (format "~a^{~a}"
           (format-expr expr)
           (format-expr sup)))
@@ -62,6 +74,9 @@
   ;; fmt:seq : <expr> -> <string>
   ;;
   ;; \vec{expr}
+  ;;
+  ;; examples:
+  ;; (fmt:seq (atom 'x)) => $\vec{x}$
   (format "\\vec{~a}"
           (format-expr expr)))
 
@@ -71,6 +86,10 @@
   ;; fmt:dots : <number> <expr>* -> <string>
   ;;
   ;; expr[1-pos] ... exprs[pos+1-n]
+  ;;
+  ;; examples:
+  ;; (fmt:dots 2 (atom 'a) (atom 'b) (atom 'z)) => $a,\ b,\ ...,\ z$
+  ;; (fmt:dots 1 (atom 'a) (atom 'y) (atom 'z)) => $a,\ ...,\ y,\ z$
   (let ([head (take exprs pos)]
         [tail (drop exprs pos)])
     (format-list (append head (list "...") tail) ",")))
@@ -80,7 +99,7 @@
 (define (fmt:subterm expr1 expr2)
   ;; fmt:subterm : <expr> <expr> -> <string>
   ;;
-  ;; expr1 ⊂ expr2
+  ;; expr1 $\subset$ expr2
   (format "~a \\subset ~a"
           (format-expr expr1)
           (format-expr expr2)))
@@ -90,7 +109,7 @@
 (define (fmt:subterms expr)
   ;; fmt:subterms : <expr> -> <string>
   ;;
-  ;; Sub(expr)
+  ;; $\mathrm{Sub}(\texttt{expr})$
   (format "\\mathrm{Sub}\\left( ~a \\right)"
           (format-expr expr)))
 
@@ -100,6 +119,9 @@
   ;; fmt:left-apply : <number> <expr> <expr> -> <string>
   ;;
   ;; (expr1^{sup} expr2)
+  ;;
+  ;; examples:
+  ;; (fmt:left-apply 3 (atom 'F) (atom 'M)) => $(F^{3}\ M)$
   (format-application
    (command 'superscript (list expr1 sup))
    expr2))
@@ -110,6 +132,9 @@
   ;; fmt:right-apply : <number> <expr> <expr> -> <string>
   ;;
   ;; (expr1 expr2^{~ sup})
+  ;;
+  ;; examples:
+  ;; (fmt:right-apply 3 (atom 'F) (atom 'M)) => $(F\ M^{\sim 3})$
   (format-application
    expr1
    (command 'superscript (list expr2 (format "\\sim ~a" (format-expr sup))))))
