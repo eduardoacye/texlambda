@@ -210,13 +210,24 @@
 
 (define (fmt:subst expr old-atom new-expr)
   ;; fmt:subst : <expr> <atom> <expr> -> <string>
-  (format "~a~a~a~a~a~a"
-          (format-expr expr)
-          (fmt:left-brack)
-          (format-expr old-atom)
-          (fmt:subst-assign)
-          (format-expr new-expr)
-          (fmt:right-brack)))
+  (if (and (notation-abuse?)
+           (or (application? expr) (abstraction? expr)))
+      (format "~a~a~a~a~a~a~a~a"
+              (fmt:left-paren)
+              (format-expr expr)
+              (fmt:right-paren)
+              (fmt:left-brack)
+              (format-expr old-atom)
+              (fmt:subst-assign)
+              (format-expr new-expr)
+              (fmt:right-brack))
+      (format "~a~a~a~a~a~a"
+              (format-expr expr)
+              (fmt:left-brack)
+              (format-expr old-atom)
+              (fmt:subst-assign)
+              (format-expr new-expr)
+              (fmt:right-brack))))
 
 (install-procedure *command-formats* 'subst fmt:subst)
 
@@ -267,3 +278,61 @@
   (cmd:quote (command 'mf (list expr))))
 
 (install-procedure *commands* 'mf cmd:mal-formed)
+
+
+;; FILLING THE HOLES OF A CONTEXT
+;;
+;;
+
+(define (fmt:hole)
+  ;; fmt:hole : <void> -> <string>
+  ;;
+  ;; examples:
+  ;; (fmt:hole) => $\left[ \quad \right]$
+  (format "~a \\quad ~a"
+          (fmt:left-brack)
+          (fmt:right-brack)))
+
+(install-procedure *command-formats* 'hole fmt:hole)
+
+(define (cmd:fill expr1 expr2)
+  (match expr1
+    [(atom symbol)
+     expr1]
+    [(application applicator applicand)
+     (application (cmd:fill applicator expr2)
+                  (cmd:fill applicand expr2))]
+    [(abstraction argument body)
+     (abstraction argument (cmd:fill body expr2))]
+    [(command name arguments)
+     (if (eq? name 'hole)
+         expr2
+         expr1)]
+    [_
+     expr1]))
+
+(install-procedure *commands* 'fill cmd:fill)
+
+(define (fmt:fill expr1 expr2)
+  ;; fmt:fill : <expr> <expr> -> <string>
+  ;;
+  ;; expr1[expr2]
+  ;;
+  ;; examples:
+  ;; (fmt:fill (atm 'M) (atm 'N)) => $M\left[ N \right]$
+  (if (and (notation-abuse?)
+           (or (abstraction? expr1) (application? expr1)))
+      (format "~a~a~a~a~a~a"
+              (fmt:left-paren)
+              (format-expr expr1)
+              (fmt:right-paren)
+              (fmt:left-brack)
+              (format-expr expr2)
+              (fmt:right-brack))
+      (format "~a~a~a~a"
+              (format-expr expr1)
+              (fmt:left-brack)
+              (format-expr expr2)
+              (fmt:right-brack))))
+
+(install-procedure *command-formats* 'fill fmt:fill)

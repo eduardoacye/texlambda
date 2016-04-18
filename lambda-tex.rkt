@@ -28,6 +28,38 @@
 (fmt:length-pre "\\left\\|")
 (fmt:length-post "\\right\\|")
 
+(define (fmt:bold expr)
+  ;; fmt:bold : <expr> -> <string>
+  ;;
+  ;; examples:
+  ;; (fmt:bold (atm 'K)) => $\boldsymbol{K}$
+  (format "\\boldsymbol{~a}"
+          (format-expr expr)))
+
+(install-procedure *command-formats* 'bold fmt:bold)
+
+(define (fmt:context expr)
+  ;; fmt:context : <expr> -> <string>
+  ;;
+  ;; expr[ ]
+  ;;
+  ;; examples:
+  ;; (fmt:context (atm 'M)) => $M\left[ \quad \right]$
+  (if (and (notation-abuse?)
+           (or (abstraction? expr) (application? expr)))
+      (format "~a~a~a~a \\quad ~a"
+              (fmt:left-paren)
+              (format-expr expr)
+              (fmt:right-paren)
+              (fmt:left-brack)
+              (fmt:right-brack))
+      (format "~a~a \\quad ~a"
+              (format-expr expr)
+              (fmt:left-brack)
+              (fmt:right-brack))))
+
+(install-procedure *command-formats* 'context fmt:context)
+
 (define (fmt:prime expr n)
   ;; fmt:prime : <expr> <number> -> <string>
   ;;
